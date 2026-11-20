@@ -123,5 +123,19 @@ async function restore(f){if(!f||busy||!db)return;busy=true;render();try{if(f.si
 async function erase(){if(busy||!db)return;busy=true;render();try{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();await done(tx);records=[];say('All data erased.')}catch(e){say('Could not erase data.')}finally{busy=false;render()}}
 $('day-prev').onclick=()=>{if(busy)return;selectedDay=key(day(new Date(selectedDay+'T12:00:00'),-1));say('');render()};
 $('day-next').onclick=()=>{if(busy||selectedDay>=today())return;selectedDay=key(day(new Date(selectedDay+'T12:00:00'),1));say('');render()};$('add').onclick=add;$('undo').onclick=undo;$('week-tab').onclick=()=>{mode='week';offset=0;render()};$('month-tab').onclick=()=>{mode='month';offset=0;render()};$('prev').onclick=()=>{offset--;render()};$('next').onclick=()=>{if(offset<0)offset++;render()};$('backup').onclick=backup;$('csv').onclick=csv;$('restore').onclick=()=>$('file').click();$('file').onchange=e=>restore(e.target.files[0]);$('erase').onclick=()=>$('confirm').showModal();$('confirm').onclose=()=>{if($('confirm').returnValue==='confirm')erase()};
-(async()=>{try{db=await openDb();await load();say('Each tap saves automatically.');render();try{await navigator.storage?.persist?.()}catch(e){}}catch(e){$('status').textContent='Storage unavailable';say('Cannot save data on this device.');console.error(e)}if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./service-worker.js').catch(console.error);if(matchMedia('(display-mode: standalone)').matches)$('install-tip').hidden=true})();
+(async()=>{try{db=await openDb();await load();say('Each tap saves automatically.');render();try{await navigator.storage?.persist?.()}catch(e){}}catch(e){$('status').textContent='Storage unavailable';say('Cannot save data on this device.');console.error(e)}if('serviceWorker' in navigator && location.protocol==='https:'){
+  navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).then(reg=>{
+    reg.update().catch(console.error);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)reg.update().catch(console.error)});
+  }).catch(console.error);
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    try{
+      const key='conversion-tracker-sw-reloaded-v6';
+      if(sessionStorage.getItem(key)!=='1'){
+        sessionStorage.setItem(key,'1');
+        location.reload();
+      }
+    }catch(e){console.warn('New app version available; reopen the app to update.',e)}
+  });
+}if(matchMedia('(display-mode: standalone)').matches)$('install-tip').hidden=true})();
 </script></body></html>
