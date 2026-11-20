@@ -42,6 +42,20 @@ html[data-theme="dark"] dialog p{color:#b4b4b9}
 html[data-theme="dark"] .add,html[data-theme="dark"] .bar{background:#0a84ff}
 html[data-theme="dark"] .add:hover{background:#3498ff}
 @media(max-width:520px){.header-actions{gap:6px}.theme-toggle{min-width:59px;min-height:32px;font-size:12px;padding:6px 8px}.pill{font-size:9px;padding:7px 7px}.brand{font-size:15px}}
+
+.backdate-link{display:block;margin:0 auto;background:transparent;color:#0071e3;padding:9px 16px;font-size:14px;font-weight:600;border-radius:999px}
+.backdate-link:hover:not(:disabled){background:#f5f5f7}
+.backdate-label{display:block;font-size:13px;font-weight:600;margin:14px 0 7px}
+#backdate-dialog input{display:block;width:100%;max-width:100%;padding:12px 13px;border:1px solid #cccdd2;background:#f5f5f7;color:#1d1d1f;border-radius:12px;font:inherit;font-size:16px}
+#backdate-dialog input:focus-visible{outline:2px solid #0071e3;outline-offset:2px}
+#backdate-dialog .dialog-actions{align-items:center}
+.backdate-submit{background:#0071e3;color:white}
+.backdate-submit:disabled{opacity:.4}
+.backdate-error{font-size:12px!important;color:#c83235!important;margin:10px 0 0}
+html[data-theme="dark"] .backdate-link{color:#64a9ff}
+html[data-theme="dark"] .backdate-link:hover:not(:disabled){background:#2c2c2e}
+html[data-theme="dark"] #backdate-dialog input{background:#303034;border-color:#52525a;color:#f5f5f7}
+html[data-theme="dark"] .backdate-submit{background:#0a84ff;color:white}
 </style><script>
 (function(){
   const key='conversion-tracker-theme';
@@ -54,13 +68,13 @@ html[data-theme="dark"] .add:hover{background:#3498ff}
 </script></head>
 <body><div class="shell">
 <header><div class="brand"><b>+</b>Conversion Tracker</div><div class="header-actions"><span id="status" class="pill">Saved on this iPhone</span><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">☾ Dark</button></div></header>
-<main><section class="hero"><div class="eyebrow">TODAY'S CONVERSIONS</div><div id="today-count" class="count" aria-live="polite">0</div><div id="today-date" class="date"></div><button id="add" class="add" disabled>＋ Add conversion</button><button id="undo" class="undo" disabled>↶ Undo last conversion</button><div id="message" class="msg" role="status">Loading saved records…</div></section>
+<main><section class="hero"><div class="eyebrow">TODAY'S CONVERSIONS</div><div id="today-count" class="count" aria-live="polite">0</div><div id="today-date" class="date"></div><button id="add" class="add" disabled>＋ Add conversion</button><button id="undo" class="undo" disabled>↶ Undo last conversion</button><button id="backdate-open" type="button" class="backdate-link" disabled>+ Add to a previous day</button><div id="message" class="msg" role="status">Loading saved records…</div></section>
 <section class="stats"><div class="stat"><span>This week</span><strong id="week-count">0</strong></div><div class="stat"><span>This month</span><strong id="month-count">0</strong></div><div class="stat"><span>Avg / active day</span><strong id="average">0.0</strong></div></section>
 <section class="card"><div class="head"><h2>History</h2><div class="tabs"><button id="week-tab" class="active" aria-pressed="true">Week</button><button id="month-tab" aria-pressed="false">Month</button></div></div><div class="nav"><button id="prev" aria-label="Previous period">‹</button><span id="period"></span><button id="next" aria-label="Next period">›</button></div><div id="history"></div><div class="total"><span>Period total</span><strong id="period-total">0</strong></div></section>
 <section class="card settings"><h2>Your data</h2><p>Each conversion is automatically saved on this device. It survives normal refreshes and restarts. No customer information is collected.</p><div class="actions"><button class="secondary" id="backup">Backup data</button><button class="secondary" id="csv">Export CSV</button><button class="secondary" id="restore">Restore backup</button><button class="secondary danger" id="erase">Erase all data</button></div><input type="file" id="file" accept=".json,application/json" hidden><p>Important: deleting the app or clearing website storage can erase local records. Save regular JSON backups in Files or iCloud Drive. Each teammate has separate records.</p></section>
 <p id="install-tip" class="footnote">iPhone: Open in Safari → Share → Add to Home Screen.</p></main>
 </div>
-<dialog id="confirm"><form method="dialog"><h2>Erase all conversions?</h2><p>This permanently deletes all local conversion records. Export a backup first if needed.</p><div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="danger-fill" value="confirm">Erase everything</button></div></form></dialog>
+<dialog id="backdate-dialog" aria-labelledby="backdate-title"><form id="backdate-form"><h2 id="backdate-title">Add past conversions</h2><p>Forgot to log conversions? Choose the day they happened and how many to add.</p><label class="backdate-label" for="backdate-date">Conversion date</label><input id="backdate-date" type="date" required><label class="backdate-label" for="backdate-quantity">Number of conversions</label><input id="backdate-quantity" type="number" inputmode="numeric" min="1" max="100" step="1" value="1" required><p id="backdate-error" class="backdate-error" role="alert" hidden></p><div class="dialog-actions"><button id="backdate-cancel" type="button" class="secondary">Cancel</button><button id="backdate-save" class="backdate-submit" type="submit">Save conversions</button></div></form></dialog><dialog id="confirm"><form method="dialog"><h2>Erase all conversions?</h2><p>This permanently deletes all local conversion records. Export a backup first if needed.</p><div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="danger-fill" value="confirm">Erase everything</button></div></form></dialog>
 <script>
 'use strict';
 const $=id=>document.getElementById(id), DB='conversion-tracker-db', STORE='conversions';
@@ -92,12 +106,51 @@ async function load(){const tx=db.transaction(STORE,'readonly');const data=await
 function counts(){const m=new Map;for(const r of records)m.set(r.date,(m.get(r.date)||0)+1);return m}
 function range(){const now=new Date;if(mode==='week'){const start=day(monday(now),offset*7);return {start,end:day(start,6)}}const start=new Date(now.getFullYear(),now.getMonth()+offset,1);return {start,end:new Date(start.getFullYear(),start.getMonth()+1,0)}}
 function sum(m,start,end){let n=0;for(let d=new Date(start);d<=end;d=day(d,1))n+=m.get(key(d))||0;return n}
-function render(){const m=counts(),now=new Date(),k=today();$('today-count').textContent=m.get(k)||0;$('today-date').textContent=format(now,{weekday:'long',month:'long',day:'numeric'});const ws=monday(now),ms=new Date(now.getFullYear(),now.getMonth(),1);$('week-count').textContent=sum(m,ws,day(ws,6));const monthly=sum(m,ms,new Date(now.getFullYear(),now.getMonth()+1,0));$('month-count').textContent=monthly;const active=[...m].filter(([d,c])=>d>=key(ms)&&d<=key(now)&&c>0).length;$('average').textContent=active?(monthly/active).toFixed(1):'0.0';$('add').disabled=busy||!db;$('undo').disabled=busy||!db||!(m.get(k)>0);
+function render(){const m=counts(),now=new Date(),k=today();$('today-count').textContent=m.get(k)||0;$('today-date').textContent=format(now,{weekday:'long',month:'long',day:'numeric'});const ws=monday(now),ms=new Date(now.getFullYear(),now.getMonth(),1);$('week-count').textContent=sum(m,ws,day(ws,6));const monthly=sum(m,ms,new Date(now.getFullYear(),now.getMonth()+1,0));$('month-count').textContent=monthly;const active=[...m].filter(([d,c])=>d>=key(ms)&&d<=key(now)&&c>0).length;$('average').textContent=active?(monthly/active).toFixed(1):'0.0';$('add').disabled=busy||!db;$('backdate-open').disabled=busy||!db;$('undo').disabled=busy||!db||!(m.get(k)>0);
 $('week-tab').classList.toggle('active',mode==='week');$('month-tab').classList.toggle('active',mode==='month');$('week-tab').setAttribute('aria-pressed',String(mode==='week'));$('month-tab').setAttribute('aria-pressed',String(mode==='month'));$('next').disabled=offset>=0;
 const r=range();$('period').textContent=mode==='week'?format(r.start,{month:'short',day:'numeric'})+' – '+format(r.end,{month:'short',day:'numeric',year:'numeric'}):format(r.start,{month:'long',year:'numeric'});
 const days=[];for(let d=new Date(r.start);d<=r.end;d=day(d,1))days.push({d,k:key(d),n:m.get(key(d))||0});const max=Math.max(1,...days.map(x=>x.n)),frag=document.createDocumentFragment();
 for(const x of days){const row=document.createElement('div');row.className='row';const label=document.createElement('span');label.className='day'+(x.k===k?' today':'');label.textContent=format(x.d,{weekday:'short',day:'numeric'});const track=document.createElement('div');track.className='track';const bar=document.createElement('div');bar.className='bar';bar.style.width=(x.n/max*100)+'%';track.append(bar);const n=document.createElement('span');n.className='value';n.textContent=x.n;row.append(label,track,n);frag.append(row)}$('history').replaceChildren(frag);$('period-total').textContent=days.reduce((a,x)=>a+x.n,0)}
 const say=s=>$('message').textContent=s;
+function openBackdate(){
+ if(busy||!db)return;
+ const max=today();
+ $('backdate-date').max=max;
+ $('backdate-date').value=key(day(new Date(),-1));
+ $('backdate-quantity').value='1';
+ $('backdate-error').hidden=true;
+ $('backdate-dialog').showModal();
+}
+async function addBackdated(event){
+ event.preventDefault();
+ if(busy||!db)return;
+ const date=$('backdate-date').value;
+ const qty=Number($('backdate-quantity').value);
+ const parsed=/^\\d{4}-\\d{2}-\\d{2}$/.test(date)?new Date(date+'T12:00:00'):new Date(NaN);
+ if(!Number.isFinite(parsed.getTime())||key(parsed)!==date||date>today()||!Number.isInteger(qty)||qty<1||qty>100){
+  $('backdate-error').textContent='Choose a valid date up to today and a quantity from 1 to 100.';
+  $('backdate-error').hidden=false;
+  return;
+ }
+ busy=true; $('backdate-save').disabled=true; render();
+ try{
+  const now=Date.now();
+  const additions=Array.from({length:qty},(_,i)=>({id:id(),date,createdAt:now+i}));
+  const tx=db.transaction(STORE,'readwrite');
+  for(const item of additions)tx.objectStore(STORE).add(item);
+  await done(tx);
+  records.push(...additions);
+  $('backdate-dialog').close();
+  // Display the affected week or month in the existing history.
+  const entered=new Date(date+'T12:00:00'),current=new Date();
+  offset=mode==='week'?Math.round((monday(entered)-monday(current))/604800000):(entered.getFullYear()-current.getFullYear())*12+entered.getMonth()-current.getMonth();
+  say('Saved '+qty+' conversion'+(qty===1?'':'s')+' for '+format(entered,{month:'short',day:'numeric',year:'numeric'})+'.');
+ }catch(err){
+  $('backdate-error').textContent='Could not save conversions. Please try again.';
+  $('backdate-error').hidden=false;
+  console.error(err);
+ }finally{busy=false;$('backdate-save').disabled=false;render()}
+}
 async function add(){if(busy||!db)return;busy=true;render();try{const r={id:id(),date:today(),createdAt:Date.now()},tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).add(r);await done(tx);records.push(r);say('Conversion saved on this iPhone.')}catch(e){say('Could not save conversion.');console.error(e)}finally{busy=false;render()}}
 async function undo(){if(busy||!db)return;const r=records.filter(x=>x.date===today()).sort((a,b)=>b.createdAt-a.createdAt)[0];if(!r)return;busy=true;render();try{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(r.id);await done(tx);records=records.filter(x=>x.id!==r.id);say('Last conversion removed.')}catch(e){say('Could not undo.');console.error(e)}finally{busy=false;render()}}
 function download(name,data,type){const url=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
@@ -106,6 +159,6 @@ function csv(){const m=counts(),rows=[...m].sort((a,b)=>a[0].localeCompare(b[0])
 const valid=r=>r&&typeof r.id==='string'&&r.id.length>0&&r.id.length<150&&typeof r.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&Number.isFinite(r.createdAt);
 async function restore(f){if(!f||busy||!db)return;busy=true;render();try{if(f.size>10000000)throw Error('Backup too large');const data=JSON.parse(await f.text());if(!['ConversionTracker','ShiftCounter'].includes(data.app)||data.version!==1||!Array.isArray(data.conversions)||data.conversions.length>100000||!data.conversions.every(valid))throw Error('Invalid backup');const have=new Set(records.map(x=>x.id)),newRecords=data.conversions.filter(x=>!have.has(x.id));if(newRecords.length){const tx=db.transaction(STORE,'readwrite');for(const r of newRecords)tx.objectStore(STORE).put({id:r.id,date:r.date,createdAt:r.createdAt});await done(tx)}await load();say('Restored '+newRecords.length+' new conversions.')}catch(e){say('Restore failed: '+e.message)}finally{busy=false;$('file').value='';render()}}
 async function erase(){if(busy||!db)return;busy=true;render();try{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();await done(tx);records=[];say('All data erased.')}catch(e){say('Could not erase data.')}finally{busy=false;render()}}
-$('add').onclick=add;$('undo').onclick=undo;$('week-tab').onclick=()=>{mode='week';offset=0;render()};$('month-tab').onclick=()=>{mode='month';offset=0;render()};$('prev').onclick=()=>{offset--;render()};$('next').onclick=()=>{if(offset<0)offset++;render()};$('backup').onclick=backup;$('csv').onclick=csv;$('restore').onclick=()=>$('file').click();$('file').onchange=e=>restore(e.target.files[0]);$('erase').onclick=()=>$('confirm').showModal();$('confirm').onclose=()=>{if($('confirm').returnValue==='confirm')erase()};
+$('backdate-open').onclick=openBackdate;$('backdate-cancel').onclick=()=>$('backdate-dialog').close();$('backdate-form').addEventListener('submit',addBackdated);$('add').onclick=add;$('undo').onclick=undo;$('week-tab').onclick=()=>{mode='week';offset=0;render()};$('month-tab').onclick=()=>{mode='month';offset=0;render()};$('prev').onclick=()=>{offset--;render()};$('next').onclick=()=>{if(offset<0)offset++;render()};$('backup').onclick=backup;$('csv').onclick=csv;$('restore').onclick=()=>$('file').click();$('file').onchange=e=>restore(e.target.files[0]);$('erase').onclick=()=>$('confirm').showModal();$('confirm').onclose=()=>{if($('confirm').returnValue==='confirm')erase()};
 (async()=>{try{db=await openDb();await load();say('Each tap saves automatically.');render();try{await navigator.storage?.persist?.()}catch(e){}}catch(e){$('status').textContent='Storage unavailable';say('Cannot save data on this device.');console.error(e)}if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./service-worker.js').catch(console.error);if(matchMedia('(display-mode: standalone)').matches)$('install-tip').hidden=true})();
 </script></body></html>
