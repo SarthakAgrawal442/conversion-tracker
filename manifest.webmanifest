@@ -1,0 +1,1 @@
+{"name":"Conversion Tracker","short_name":"Conversions","description":"Private conversion tracking by day, week and month","id":"./","start_url":"./","scope":"./","display":"standalone","background_color":"#f5f7fc","theme_color":"#172e67","icons":[{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
