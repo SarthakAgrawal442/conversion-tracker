@@ -78,3 +78,9 @@ New commits to `main` are deployed automatically by GitHub Pages. If an installe
 - No separate shift start/end controls; the app tracks calendar dates.
 
 Conversion Tracker is a personal productivity tool. Before using counts for official workplace reporting, follow your organization's policies and never enter customer details.
+
+## Disclaimer
+
+Conversion Tracker is an independent, personal project developed for personal use and learning purposes only. It is not intended for commercial use or monetization.
+
+This project is not affiliated with, endorsed by, or sponsored by Apple Inc. or any other organization.
