@@ -1,4 +1,4 @@
-const CACHE='conversion-tracker-v6';
+const CACHE='conversion-tracker-v7';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(async cache=>{
