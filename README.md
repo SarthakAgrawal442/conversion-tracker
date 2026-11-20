@@ -1,6 +1,6 @@
 # Conversion Tracker
 
-A lightweight, free Progressive Web App (PWA) for counting repair-to-purchase conversions during work shifts. Designed for iPhone and iPad with a clean, Apple-inspired interface. No App Store installation, account, or backend required.
+A lightweight, free Progressive Web App (PWA) for counting repair-to-purchase conversions during work shifts. Designed for iPhone and iPad with a clean, clean, minimalist interface. No App Store installation, account, or backend required.
 
 **Open the app:** https://sarthakagrawal442.github.io/conversion-tracker/
 
